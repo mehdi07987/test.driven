@@ -21,7 +21,6 @@ Test cases can be run with:
 
 While debugging just these tests it's convenient to use this:
     nosetests --stop tests/test_models.py:TestProductModel
-
 """
 import os
 import logging
@@ -72,7 +71,13 @@ class TestProductModel(unittest.TestCase):
 
     def test_create_a_product(self):
         """It should Create a product and assert that it exists"""
-        product = Product(name="Fedora", description="A red hat", price=12.50, available=True, category=Category.CLOTHS)
+        product = Product(
+            name="Fedora",
+            description="A red hat",
+            price=12.50,
+            available=True,
+            category=Category.CLOTHS,
+        )
         self.assertEqual(str(product), "<Product Fedora id=[None]>")
         self.assertTrue(product is not None)
         self.assertEqual(product.id, None)
@@ -101,6 +106,59 @@ class TestProductModel(unittest.TestCase):
         self.assertEqual(new_product.available, product.available)
         self.assertEqual(new_product.category, product.category)
 
-    #
-    # ADD YOUR TEST CASES HERE
-    #
+    def test_read_a_product(self):
+        """It should Read a product from the database"""
+        product = ProductFactory()
+        product.create()
+        fetched_product = Product.find(product.id)
+        self.assertIsNotNone(fetched_product)
+        self.assertEqual(fetched_product.name, product.name)
+
+    def test_update_a_product(self):
+        """It should Update a product in the database"""
+        product = ProductFactory()
+        product.create()
+        product.name = "Updated Name"
+        product.update()
+        updated_product = Product.find(product.id)
+        self.assertEqual(updated_product.name, "Updated Name")
+
+    def test_delete_a_product(self):
+        """It should Delete a product from the database"""
+        product = ProductFactory()
+        product.create()
+        product_id = product.id
+        product.delete()
+        deleted_product = Product.find(product_id)
+        self.assertIsNone(deleted_product)
+
+    def test_list_all_products(self):
+        """It should List all products in the database"""
+        ProductFactory.create_batch(5)
+        products = Product.all()
+        self.assertEqual(len(products), 5)
+
+    def test_find_by_name(self):
+        """It should Find a product by name"""
+        product = ProductFactory(name="Unique Name")
+        product.create()
+        found_products = Product.find_by_name("Unique Name")
+        self.assertEqual(len(found_products), 1)
+        self.assertEqual(found_products[0].name, "Unique Name")
+
+    def test_find_by_category(self):
+        """It should Find products by category"""
+        ProductFactory(category=Category.FOOD).create()
+        products = Product.find_by_category(Category.FOOD)
+        self.assertGreater(len(products), 0)
+        for product in products:
+            self.assertEqual(product.category, Category.FOOD)
+
+    def test_find_by_availability(self):
+        """It should Find products by availability"""
+        ProductFactory(available=True).create()
+        products = Product.find_by_availability(True)
+        self.assertGreater(len(products), 0)
+        for product in products:
+            self.assertTrue(product.available)
+

@@ -38,15 +38,22 @@ def step_impl(context):
     #
     rest_endpoint = f"{context.base_url}/products"
     context.resp = requests.get(rest_endpoint)
-    assert(context.resp.status_code == HTTP_200_OK)
+    assert context.resp.status_code == HTTP_200_OK, f"GET /products failed with {context.resp.status_code}"
+    
     for product in context.resp.json():
         context.resp = requests.delete(f"{rest_endpoint}/{product['id']}")
-        assert(context.resp.status_code == HTTP_204_NO_CONTENT)
+        assert context.resp.status_code == HTTP_204_NO_CONTENT, f"DELETE /products/{product['id']} failed"
 
     #
-    # load the database with new products
+    # Load the database with new products
     #
     for row in context.table:
-        #
-        # ADD YOUR CODE HERE TO CREATE PRODUCTS VIA THE REST API
-        #
+        payload = {
+            "name": row["name"],
+            "description": row["description"],
+            "price": float(row["price"]),
+            "available": row["available"].lower() == "true",
+            "category": row["category"]
+        }
+        context.resp = requests.post(rest_endpoint, json=payload)
+        assert context.resp.status_code == HTTP_201_CREATED, f"POST /products failed with {context.resp.status_code}"
